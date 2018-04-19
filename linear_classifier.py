@@ -4,7 +4,10 @@
 # import the necessary packages
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import LinearSVC
+
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+
 from sklearn.cross_validation import train_test_split
 from imutils import paths
 import numpy as np
@@ -13,12 +16,14 @@ import imutils
 import cv2
 import os
 
+import matplotlib.pyplot as plt
+
+
 def extract_color_histogram(image, bins=(8, 8, 8)):
 	# extract a 3D color histogram from the HSV color space using
 	# the supplied number of `bins` per channel
 	hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-	hist = cv2.calcHist([hsv], [0, 1, 2], None, bins,
-		[0, 180, 0, 256, 0, 256])
+	hist = cv2.calcHist([hsv], [0, 1, 2], None, bins, [0, 180, 0, 256, 0, 256])
 
 	# handle normalizing the histogram if we are using OpenCV 2.4.X
 	if imutils.is_cv2():
@@ -34,8 +39,7 @@ def extract_color_histogram(image, bins=(8, 8, 8)):
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--dataset", required=True,
-	help="path to input dataset")
+ap.add_argument("-d", "--dataset", required=True, help="path to input dataset")
 args = vars(ap.parse_args())
 
 # grab the list of images that we'll be describing
@@ -72,8 +76,7 @@ labels = le.fit_transform(labels)
 print("[INFO] constructing training/testing split...")
 #(trainData, testData, trainLabels, testLabels) = train_test_split(
 #	np.array(data), labels, test_size=0.25, random_state=42)
-(trainData, testData, trainLabels, testLabels) = train_test_split(
-	np.array(data), labels, test_size=0.25, random_state=None)
+(trainData, testData, trainLabels, testLabels) = train_test_split(np.array(data), labels, test_size=0.25, random_state=None)
 
 # train the linear regression clasifier
 print("[INFO] training Linear SVM classifier...")
@@ -83,5 +86,27 @@ model.fit(trainData, trainLabels)
 # evaluate the classifier
 print("[INFO] evaluating classifier...")
 predictions = model.predict(testData)
-print(classification_report(testLabels, predictions,
-	target_names=le.classes_))
+
+print("Classification Report:")
+print(classification_report(testLabels, predictions, target_names=le.classes_))
+
+print("Confusion Matrix:")
+cmat = confusion_matrix(testLabels, predictions)
+print(cmat)
+
+
+# Plotting the confusion matrix
+class_names = le.classes_.tolist()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+#cax = ax.matshow(cmat, cmap=plt.get_cmap('gray'))
+cax = ax.matshow(cmat)
+plt.title('Confusion matrix of the classifier')
+fig.colorbar(cax)
+ax.set_xticklabels([''] + class_names)
+ax.set_yticklabels([''] + class_names)
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.show()
+
+
